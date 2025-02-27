@@ -1,0 +1,505 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS Interface</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style1.css' %}">
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <div class="top-nav">
+        Mapping Healthcare Facilities for the Maternity Benefit Package Review
+    </div>
+    <!-- Debug datasets -->
+    <pre>{{ datasets|pprint }}</pre>
+
+    <div class="top-controls-row">
+        <!-- Buffer Controls -->
+        <div id="buffer-controls">
+            <div class="buffer-box">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="level4BufferCheckbox">
+                    <span class="checkmark"></span> Level 4 Buffer
+                </label>
+            </div>
+            <div class="buffer-box">
+                <label class="custom-checkbox">
+                    <input type="checkbox" id="level5BufferCheckbox">
+                    <span class="checkmark"></span> Level 5 Buffer
+                </label>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div id="search-container">
+            <input type="text" id="hospital-search" placeholder="Search hospital...">
+            <div id="search-results"></div>
+        </div>
+    </div>
+
+
+    
+    
+
+
+    <!-- Map container -->
+    <div id="map-container">
+       <div id="map"></div>
+    </div>
+
+
+
+
+    {%block navigatio%}
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <img src="{% static 'images/hospitals points.png' %}" alt="Hospital Points" class="sidebar-image">
+        <h4 class="text-center">Hospital Mapping</h4>
+        <a href="#" id="layers-tab">Layers</a>
+        <!-- Layers Control Panel -->
+        <div id="layer-controls">
+            <label class="custom-checkbox">
+                <input type="checkbox" id="countyLayerCheckbox">
+                <span class="checkmark"></span> Country
+            </label><br>
+            <label class="custom-checkbox">
+                <input type="checkbox" id="countryLayerCheckbox">
+                <span class="checkmark"></span> Counties
+            </label><br>
+            <label class="custom-checkbox">
+                <input type="checkbox" id="subcountyLayerCheckbox">
+                <span class="checkmark"></span> Subcounties
+            </label><br>
+            <label class="custom-checkbox">
+                <input type="checkbox" id="hospitalLayerCheckbox">
+                <span class="checkmark"></span> Hospitals
+            </label>
+        </div>
+        <a href="{% url 'analytics' %}">Analytics</a>
+        
+    </div>
+        <!-- Right-side boxes -->
+        {% endblock %}
+    <div id="right-side-boxes">
+        <div class="level-box" id="level2">Level 2: 0</div>
+        <div class="level-box" id="level3">Level 3: 0</div>
+        <div class="level-box" id="level4">Level 4: 0</div>
+        <div class="level-box" id="level5">Level 5: 0</div>
+    </div>
+
+
+    <!-- Control Container for Layer Control and Geocoder -->
+    <div id="control-container">
+        <!-- Geocoder (Search Bar) -->
+        <div id="geocoder-control" style="margin-top: 10px;"></div>
+    </div>
+
+    
+
+
+    
+
+    
+
+    <!-- JavaScript Files -->
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://unpkg.com/leaflet-minimap/dist/Control.MiniMap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript Code -->
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        // Initialize the map
+        var map = L.map('map').setView([-1.284910, 36.826252], 6); // Center on Kenya
+
+        // Add a base tile layer (e.g., OpenStreetMap)
+        var standardLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Define tile layers
+        var esri_url = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+        var esri_attribution = 'Tiles © Esri';
+        var lyr_satellite = L.tileLayer(esri_url, { maxZoom: 20, attribution: esri_attribution });
+
+        var baseMaps = {
+            "Streets": standardLayer,
+            "Satellite": lyr_satellite
+        };
+
+        // Layer Control
+        L.control.layers(baseMaps).addTo(map);
+
+        // Layer groups
+        var subcountyLayer = L.layerGroup();
+        var countyLayer = L.layerGroup();
+        var countryLayer = L.layerGroup().addTo(map);
+        var hospitalLayer = L.layerGroup();
+        var hospitalMarkers = L.markerClusterGroup();
+        var level4BufferLayer = L.layerGroup();
+        var level5BufferLayer = L.layerGroup();
+
+        
+
+
+        function addGeoJSONLayer(url, layerGroup, color) {
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    L.geoJSON(data, {
+                        style: function (feature) {
+                            return { color: color, weight: 2, fillOpacity: 0.4 };
+                        },
+                        onEachFeature: function (feature, layer) {
+                            if (feature.properties) {
+                                layer.bindPopup(`<b>${feature.properties.adm1_en || feature.properties.adm0_en || feature.properties.adm2_en}</b>`);
+                            }
+        
+                            // Add click event listener to the polygon
+                            layer.on('click', function (e) {
+                                // Highlight the clicked polygon
+                                layer.setStyle({
+                                    color: 'yellow', // Change color to highlight
+                                    weight: 3,
+                                    fillOpacity: 0.7
+                                });
+        
+                                // Reset the style of previously clicked polygons
+                                if (window.previousLayer) {
+                                    window.previousLayer.setStyle({
+                                        color: color, // Revert to original color
+                                        weight: 2,
+                                        fillOpacity: 0.4
+                                    });
+                                }
+                                window.previousLayer = layer; // Store the currently clicked layer
+        
+                                // Get the geometry of the clicked polygon
+                                var polygonGeometry = e.target.toGeoJSON().geometry;
+        
+                                // Fetch hospitals within the clicked polygon
+                                fetch('/api/hospitals/within-polygon/', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRFToken': getCookie('csrftoken')
+                                    },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                        geometry: polygonGeometry // Send the polygon geometry to the server
+                                    })
+                                })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        // Reset counts
+                                        var levelCounts = {
+                                            'Level 2': 0,
+                                            'Level 3': 0,
+                                            'Level 4': 0,
+                                            'Level 5': 0
+                                        };
+        
+                                        // Count hospitals by level
+                                        data.features.forEach(function(hospital) {
+                                            var level = hospital.properties.keph_level;
+                                            if (level in levelCounts) {
+                                                levelCounts[level]++;
+                                            }
+                                        });
+        
+                                        // Update the respective boxes
+                                        document.getElementById('level2').textContent = `Level 2: ${levelCounts['Level 2']}`;
+                                        document.getElementById('level3').textContent = `Level 3: ${levelCounts['Level 3']}`;
+                                        document.getElementById('level4').textContent = `Level 4: ${levelCounts['Level 4']}`;
+                                        document.getElementById('level5').textContent = `Level 5: ${levelCounts['Level 5']}`;
+                                    })
+                                    .catch(error => console.error('Error fetching hospital data:', error));
+                            });
+                        }
+                    }).addTo(layerGroup);
+                })
+                .catch(error => console.error('Error loading GeoJSON:', error));
+        }
+
+        // Load each dataset
+        addGeoJSONLayer('http://127.0.0.1:8000/api/subcounties/', subcountyLayer, 'blue');
+        addGeoJSONLayer('http://127.0.0.1:8000/api/counties/', countyLayer, 'green');
+        addGeoJSONLayer('http://127.0.0.1:8000/api/countries/', countryLayer, 'red');
+        
+        // Fetch hospital data dynamically
+        function fetchHospitals() {
+            var bounds = map.getBounds();
+            var zoomLevel = map.getZoom();
+
+            var url = `http://localhost:8000/api/hospitals/?bbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&zoom=${zoomLevel}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    hospitalMarkers.clearLayers();  // Clear existing markers
+                    data.features.forEach(function(hospital) {
+                        var lat = hospital.geometry.coordinates[1];
+                        var lon = hospital.geometry.coordinates[0];
+
+                        // Skip plotting if latitude or longitude is null or undefined
+                        if (lat == null || lon == null || lat === undefined || lon === undefined) {
+                            console.warn('Skipping hospital with invalid coordinates:', hospital);
+                            return;
+                        }
+
+                        var popupContent = `
+                            <strong>${hospital.properties.facility}</strong><br>
+                            County: ${hospital.properties.county}<br>
+                            Sub-county: ${hospital.properties.sub_county}<br>
+                            Constituency: ${hospital.properties.constituen}<br>
+                            Ward: ${hospital.properties.ward}<br>
+                            KEHP Level: ${hospital.properties.keph_level}
+                            Ownership: ${hospital.properties.Ownership}<br>
+                            Rural/Urban: ${hospital.properties.QQ2} (${hospital.properties.Q2})<br>
+                            Type: ${hospital.properties.QQ3}
+                        `;
+                        var marker = L.marker([lat, lon]).bindPopup(popupContent);
+                        hospitalMarkers.addLayer(marker);
+                    });
+                    hospitalLayer.addLayer(hospitalMarkers);
+                })
+                .catch(error => console.error('Error fetching hospital data:', error));
+        }
+
+        // Fetch hospitals when the map is zoomed or panned
+        map.on('moveend', function() {
+            fetchHospitals();
+        });
+
+        fetchHospitals();
+
+        // Checkbox event listeners for layer toggling
+        document.getElementById('subcountyLayerCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                map.addLayer(subcountyLayer);
+            } else {
+                map.removeLayer(subcountyLayer);
+            }
+        });
+
+        document.getElementById('countyLayerCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                map.addLayer(countyLayer);
+            } else {
+                map.removeLayer(countyLayer);
+            }
+        });
+
+        document.getElementById('countryLayerCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                map.addLayer(countryLayer);
+            } else {
+                map.removeLayer(countryLayer);
+            }
+        });
+
+        // Checkbox event listener for hospital layer
+        document.getElementById('hospitalLayerCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                map.addLayer(hospitalLayer);
+            } else {
+                map.removeLayer(hospitalLayer);
+            }
+        });
+
+        // Checkbox event listeners for Level 4 and Level 5 Buffer layers
+        document.getElementById('level4BufferCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                addGeoJSONLayer('http://127.0.0.1:8000/api/level4-buffer/', level4BufferLayer, 'purple');
+                map.addLayer(level4BufferLayer);
+            } else {
+                map.removeLayer(level4BufferLayer);
+                level4BufferLayer.clearLayers();
+            }
+        });
+
+        document.getElementById('level5BufferCheckbox').addEventListener('change', function () {
+            if (this.checked) {
+                addGeoJSONLayer('http://127.0.0.1:8000/api/level5-buffer/', level5BufferLayer, 'orange');
+                map.addLayer(level5BufferLayer);
+            } else {
+                map.removeLayer(level5BufferLayer);
+                level5BufferLayer.clearLayers();
+            }
+        });
+
+
+        // Search functionality
+        document.getElementById('hospital-search').addEventListener('input', function (e) {
+            var query = e.target.value;
+            if (query.length >= 3) { // Only search if the user has typed at least 3 characters
+                fetch(`/api/hospitals/?search=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var resultsContainer = document.getElementById('search-results');
+                        resultsContainer.innerHTML = ''; // Clear previous results
+                        if (data.features.length > 0) {
+                            data.features.forEach(function (hospital) {
+                                var resultItem = document.createElement('div');
+                                resultItem.className = 'search-result-item';
+                                resultItem.textContent = hospital.properties.facility;
+                                resultItem.addEventListener('click', function () {
+                                    // Zoom to the hospital location
+                                    var lat = hospital.geometry.coordinates[1];
+                                    var lon = hospital.geometry.coordinates[0];
+                                    map.setView([lat, lon], 15); // Zoom level 15
+
+                                    // Open popup with hospital details
+                                    var popupContent = `
+                                        <strong>${hospital.properties.facility}</strong><br>
+                                        County: ${hospital.properties.county}<br>
+                                        Sub-county: ${hospital.properties.sub_county}<br>
+                                        Constituency: ${hospital.properties.constituen}<br>
+                                        Ward: ${hospital.properties.ward}<br>
+                                        KEHP Level: ${hospital.properties.keph_level}<br>
+                                        Ownership: ${hospital.properties.Ownership}<br>
+                                        Rural/Urban: ${hospital.properties.QQ2} (${hospital.properties.Q2})<br>
+                                        Type: ${hospital.properties.QQ3}
+                                    `;
+                                    L.popup()
+                                        .setLatLng([lat, lon])
+                                        .setContent(popupContent)
+                                        .openOn(map);
+
+                                    // Clear search results
+                                    resultsContainer.style.display = 'none';
+                                });
+                                resultsContainer.appendChild(resultItem);
+                            });
+                            resultsContainer.style.display = 'block';
+                        } else {
+                            resultsContainer.style.display = 'none';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching search results:', error));
+            } else {
+                document.getElementById('search-results').style.display = 'none';
+            }
+        });
+
+        // Close search results when clicking outside
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#search-container')) {
+                document.getElementById('search-results').style.display = 'none';
+            }
+        });
+
+
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        document.getElementById('hospital-search').addEventListener('input', debounce(function (e) {
+            var query = e.target.value;
+            if (query.length >= 3) {
+                fetch(`/api/hospitals/?search=${query}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        var resultsContainer = document.getElementById('search-results');
+                        resultsContainer.innerHTML = '';
+                        if (data.features.length > 0) {
+                            data.features.forEach(function (hospital) {
+                                var resultItem = document.createElement('div');
+                                resultItem.className = 'search-result-item';
+                                resultItem.textContent = hospital.properties.facility;
+                                resultItem.addEventListener('click', function () {
+                                    var lat = hospital.geometry.coordinates[1];
+                                    var lon = hospital.geometry.coordinates[0];
+                                    map.setView([lat, lon], 15);
+
+                                    var popupContent = `
+                                        <strong>${hospital.properties.facility}</strong><br>
+                                        County: ${hospital.properties.county}<br>
+                                        Sub-county: ${hospital.properties.sub_county}<br>
+                                        Constituency: ${hospital.properties.constituen}<br>
+                                        Ward: ${hospital.properties.ward}<br>
+                                        KEHP Level: ${hospital.properties.keph_level}<br>
+                                        Ownership: ${hospital.properties.Ownership}<br>
+                                        Rural/Urban: ${hospital.properties.QQ2} (${hospital.properties.Q2})<br>
+                                        Type: ${hospital.properties.QQ3}
+                                    `;
+                                    L.popup()
+                                        .setLatLng([lat, lon])
+                                        .setContent(popupContent)
+                                        .openOn(map);
+
+                                    resultsContainer.style.display = 'none';
+                                });
+                                resultsContainer.appendChild(resultItem);
+                            });
+                            resultsContainer.style.display = 'block';
+                        } else {
+                            resultsContainer.style.display = 'none';
+                        }
+                    })
+                    .catch(error => console.error('Error fetching search results:', error));
+            } else {
+                document.getElementById('search-results').style.display = 'none';
+            }
+        }, 300));
+
+
+
+        
+
+        // Add MiniMap
+        var miniMapLayer = L.tileLayer(esri_url, { maxZoom: 20, attribution: esri_attribution });
+        var miniMap = new L.Control.MiniMap(miniMapLayer, { toggleDisplay: true }).addTo(map);
+
+        // Geocoder (search bar)
+        L.Control.geocoder().addTo(map);
+
+        // Show/Hide Layers Control Panel
+        document.getElementById('layers-tab').addEventListener('click', function (e) {
+            e.preventDefault();
+            var layerControls = document.getElementById('layer-controls');
+            if (layerControls.style.display === 'none') {
+                layerControls.style.display = 'block';
+            } else {
+                layerControls.style.display = 'none';
+            }
+        });
+    </script>
+    
+
+
+
+
+    
+</body>
+</html>

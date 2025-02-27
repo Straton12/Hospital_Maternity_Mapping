@@ -1,0 +1,145 @@
+{% extends "base1.html" %}
+{% load static %}
+
+{% block title %}Login - Geospatial Hospital Mapping{% endblock %}
+
+{% block content %}
+<div style="
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(135deg, #007BFF, #00BFFF);
+    background-size: cover;
+    font-family: 'Arial', sans-serif;
+">
+    <div style="
+        width: 400px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        backdrop-filter: blur(10px);
+    ">
+        <!-- Hospital-themed icon -->
+        <div style="margin-bottom: 20px;">
+            <img src="{% static 'images/hospital-icon.png' %}" alt="Hospital Icon" style="width: 100px; height: 100px;">
+        </div>
+        <h2 style="
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+        ">
+            Login to Geospatial Hospital Mapping
+        </h2>
+        <form method="POST">
+            {% csrf_token %}
+            <!-- Username Input -->
+            <div style="margin-bottom: 20px;">
+                <input type="text" name="username" placeholder="Username" required 
+                       style="
+                           width: 100%;
+                           padding: 12px;
+                           border: 1px solid #ccc;
+                           border-radius: 8px;
+                           font-size: 16px;
+                           outline: none;
+                           transition: border-color 0.3s ease;
+                       ">
+            </div>
+            <!-- Password Input -->
+            <div style="margin-bottom: 20px; position: relative;">
+                <input type="password" id="password" name="password" placeholder="Password" required 
+                       style="
+                           width: 100%;
+                           padding: 12px;
+                           border: 1px solid #ccc;
+                           border-radius: 8px;
+                           font-size: 16px;
+                           outline: none;
+                           transition: border-color 0.3s ease;
+                       ">
+                <span class="icon toggle-password" onclick="togglePassword()" 
+                      style="
+                          position: absolute;
+                          right: 15px;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          cursor: pointer;
+                          font-size: 18px;
+                          color: #007BFF;
+                      ">
+                    👁️
+                </span>
+            </div>
+            <!-- Remember Me and Forgot Password -->
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                font-size: 14px;
+            ">
+                <label style="color: #555;">
+                    <input type="checkbox" style="margin-right: 5px;"> Remember me
+                </label>
+                <a href="{% url 'password_reset' %}" 
+                   style="
+                       color: #007BFF;
+                       text-decoration: none;
+                       transition: color 0.3s ease;
+                   ">
+                    Forgot password?
+                </a>
+            </div>
+            <!-- Login Button -->
+            <button type="submit" 
+                    style="
+                        width: 100%;
+                        padding: 12px;
+                        background: #007BFF;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: background 0.3s ease;
+                    ">
+                LOGIN
+            </button>
+        </form>
+        <!-- Sign Up Link -->
+        <p style="
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        ">
+            Don't have an account? 
+            <a href="{% url 'register' %}" 
+               style="
+                   color: #007BFF;
+                   text-decoration: none;
+                   font-weight: bold;
+                   transition: color 0.3s ease;
+               ">
+                Sign up
+            </a>
+        </p>
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        var passwordField = document.getElementById("password");
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+        } else {
+            passwordField.type = "password";
+        }
+    }
+</script>
+{% endblock %}

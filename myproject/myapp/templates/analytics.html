@@ -1,0 +1,771 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/style1.css' %}">
+    <link rel="stylesheet" href="{% static 'css/analytics.css' %}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* General Page Styling */
+        body {
+            background-color: #f8f9fa; /* Light grayish-white for a clean dashboard */
+            color: #212529; /* Dark grayish-black for readability */
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+        }
+
+        /* Main Dashboard Container */
+        .main-container {
+            margin-left: 220px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        /* Dashboard Boxes */
+        .dashboard-box {
+            background: #ffffff; /* Pure white for a clean card look */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            color: #212529;
+        }
+
+        .dashboard-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Box Sizes */
+        .large-box { flex: 2; min-height: 150px; }
+        .medium-box { flex: 1; min-height: 150px; }
+        .small-box { flex: 1; min-height: 100px; }
+
+        /* Row Styling */
+        .row, .row2, .row3, .row4, .row5 {
+            display: flex;
+            width: 100%;
+            gap: 20px;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* Background colors for different row sections */
+        .row { background-color: #e9ecef; }  /* Light gray */
+        .row2 .dashboard-box { background-color: #f8d7da; } /* Soft red */
+        .row3 .dashboard-box { background-color: #d1ecf1; } /* Soft blue */
+        .row4 .dashboard-box { background-color: #d4edda; } /* Soft green */
+        .row5 .dashboard-box { background-color: #fff3cd; } /* Soft yellow */
+
+        /* Dropdown Container */
+        .dropdown-container {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            margin-left: 260px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse; /* Ensures borders don't double up */
+            background-color: #ffffff; /* White background for clarity */
+            border-radius: 8px; /* Rounded corners for a modern look */
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Soft shadow */
+        }
+
+        /* Table Headings */
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #dee2e6; /* Thin lines between rows and columns */
+        }
+
+        th {
+            background-color: #f1f1f1; /* Light gray header background */
+            font-weight: bold;
+        }
+
+        /* Alternating row colors for better readability */
+        tr:nth-child(even) {
+            background-color: #f8f9fa; /* Light gray */
+        }
+
+        tr:hover {
+            background-color: #e9ecef; /* Slight hover effect */
+        }
+
+        /* Responsive Table */
+        @media screen and (max-width: 768px) {
+            table {
+                display: block;
+                overflow-x: auto; /* Allows horizontal scrolling on small screens */
+                white-space: nowrap;
+            }
+        }
+
+        .download-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .download-btn i {
+            margin-right: 5px;
+        }
+
+        .download-btn:hover {
+            background-color: #0056b3;
+        }
+        .sidebar-image {
+            width: 30%; /* Adjust width (reduce if needed) */
+            max-height: 80px; /* Reduce height */
+            display: block;
+            margin: 10px auto; /* Center the image */
+            border-radius: 8px; /* Optional rounded corners */
+        }
+
+
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <img src="{% static 'images/hospitals points.png' %}" alt="Hospital Points" class="sidebar-image">
+        <h4 class="text-center">Hospital Mapping</h4>
+        <a href="{% url 'home' %}">Layers</a>
+    </div>
+
+    <!-- Dropdown Filters -->
+    <div class="dropdown-container">
+        <!-- County Dropdown -->
+        <select class="form-select" id="countyDropdown" aria-label="Dropdown 1">
+            <option selected>Select County</option>
+            {% for county in counties %}
+                <option value="{{ county }}">{{ county }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Subcounty Dropdown -->
+        <select class="form-select" id="subcountyDropdown" aria-label="Dropdown 2">
+            <option selected>Select Subcounty</option>
+        </select>
+
+        <!-- Level 4 Buffer Dropdown -->
+        <select class="form-select" id="level4BufferDropdown" aria-label="Dropdown 3">
+            <option selected>Select Level 4 Buffer</option>
+            {% for buffer in level4_buffers %}
+                <option value="level4-{{ buffer }}">{{ buffer }} km</option>
+            {% endfor %}
+        </select>
+
+        <!-- Level 5 Buffer Dropdown -->
+        <select class="form-select" id="level5BufferDropdown" aria-label="Dropdown 4">
+            <option selected>Select Level 5 Buffer</option>
+            {% for buffer in level5_buffers %}
+                <option value="level5-{{ buffer }}">{{ buffer }} km</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Dashboard Layout -->
+    <div class="main-container">
+        <div class="row">
+            <div class="dashboard-box large-box">
+                <h6 id="totalHospitals">Total Facilities Count: 0</h6>
+                <canvas id="hospitalChart" width="200" height="100"></canvas>
+            </div>
+            <div class="dashboard-box large-box">
+                <h6>Hospitals by Subcounty</h6>
+                <canvas id="subcountyChart" width="300" height="200"></canvas>
+            </div>
+            <div class="dashboard-box medium-box">
+                <h6>Closure Rate (Facility Ownership by County)</h6>
+                <canvas id="ownershipPieChart" width="200" height="200"></canvas>
+            </div>
+
+            <div class="dashboard-box medium-box">
+                <h6>Facility Ownership by Subcounty</h6>
+                <canvas id="ownershipSubcountyChart" width="200" height="100"></canvas>
+            </div>
+
+        </div>
+        <div class="row">
+            <div class="dashboard-box medium-box">
+                <h6>Facilities by KEPH Level (QQ3 Density)</h6>
+                <canvas id="qq3DensityChart" width="250" height="150"></canvas>
+            </div>
+
+            <div class="dashboard-box medium-box">
+                <h6>Facilities by Ownership (QQ3 Line Graph)</h6>
+                <canvas id="qq3PieChart" width="250" height="150"></canvas>
+            </div>
+            
+            
+        </div>
+        <div class="dashboard-box medium-box">
+            <h3>Hospitals within Buffer</h3>
+            <p id="hospitalCount">Hospitals within Buffer: 0</p>
+        </div>
+        
+        <div class="row2">
+            <div class="dashboard-box large-box">
+                <h5>Level 2</h5>
+                <button class="download-btn" onclick="downloadCSV('level2Table')">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button class="download-btn" onclick="downloadPDF('level2Table', 'Level 2 Facilities')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <table id="level2Table">
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>County</th>
+                            <th>Subcounty</th>
+                            <th>Ward</th>
+                            <th>Ownership</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row3">
+            <div class="dashboard-box large-box">
+                <h5>Level 3</h5>
+                <button class="download-btn" onclick="downloadCSV('level2Table')">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button class="download-btn" onclick="downloadPDF('level2Table', 'Level 2 Facilities')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <table id="level3Table">
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>County</th>
+                            <th>Subcounty</th>
+                            <th>Ward</th>
+                            <th>Ownership</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row4">
+            <div class="dashboard-box large-box">
+                <h5>Level 4</h5>
+                <button class="download-btn" onclick="downloadCSV('level2Table')">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button class="download-btn" onclick="downloadPDF('level2Table', 'Level 2 Facilities')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <table id="level4Table">
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>County</th>
+                            <th>Subcounty</th>
+                            <th>Ward</th>
+                            <th>Ownership</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="row5">
+            <div class="dashboard-box large-box">
+                <h5>Level 5</h5>
+                <button class="download-btn" onclick="downloadCSV('level2Table')">
+                    <i class="fas fa-file-csv"></i> CSV
+                </button>
+                <button class="download-btn" onclick="downloadPDF('level2Table', 'Level 2 Facilities')">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <table id="level5Table">
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>County</th>
+                            <th>Subcounty</th>
+                            <th>Ward</th>
+                            <th>Ownership</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be dynamically added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your existing JavaScript -->
+    <script>
+        const subcountiesData = {{ subcounties|safe }};
+        
+        document.getElementById('countyDropdown').addEventListener('change', function() {
+            const selectedCounty = this.value;
+            const subcountyDropdown = document.getElementById('subcountyDropdown');
+            
+            // Clear existing options
+            subcountyDropdown.innerHTML = '<option selected>Select Subcounty</option>';
+            
+            if (selectedCounty && subcountiesData[selectedCounty]) {
+                subcountiesData[selectedCounty].forEach(subcounty => {
+                    const option = document.createElement('option');
+                    option.value = subcounty;
+                    option.textContent = subcounty;
+                    subcountyDropdown.appendChild(option);
+                });
+            }
+
+            // Fetch buffer distances based on the selected county
+            fetch(`/home/get-buffer-distances/?county=${selectedCounty}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+                    updateBufferDropdowns(data.level4_buffers, data.level5_buffers);
+                })
+                .catch(error => console.error('Error fetching buffer distances:', error));
+        });
+
+        document.getElementById('subcountyDropdown').addEventListener('change', function() {
+            const selectedSubcounty = this.value;
+            const selectedCounty = document.getElementById('countyDropdown').value;
+
+            // Fetch buffer distances based on the selected county and subcounty
+            fetch(`/home/get-buffer-distances/?county=${selectedCounty}&subcounty=${selectedSubcounty}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+                    updateBufferDropdowns(data.level4_buffers, data.level5_buffers);
+                })
+                .catch(error => console.error('Error fetching buffer distances:', error));
+        });
+
+        function updateBufferDropdowns(level4Buffers, level5Buffers) {
+            const level4BufferDropdown = document.getElementById('level4BufferDropdown');
+            const level5BufferDropdown = document.getElementById('level5BufferDropdown');
+
+            // Clear existing options
+            level4BufferDropdown.innerHTML = '<option selected>Select Level 4 Buffer</option>';
+            level5BufferDropdown.innerHTML = '<option selected>Select Level 5 Buffer</option>';
+
+            // Populate Level 4 Buffer dropdown
+            level4Buffers.forEach(buffer => {
+                const option = document.createElement('option');
+                option.value = `level4-${buffer}`;
+                option.textContent = `${buffer} km`;
+                level4BufferDropdown.appendChild(option);
+            });
+
+            // Populate Level 5 Buffer dropdown
+            level5Buffers.forEach(buffer => {
+                const option = document.createElement('option');
+                option.value = `level5-${buffer}`;
+                option.textContent = `${buffer} km`;
+                level5BufferDropdown.appendChild(option);
+            });
+        }
+    </script>
+
+    <script>
+        document.getElementById('countyDropdown').addEventListener('change', function() {
+            const selectedCounty = this.value;
+            if (!selectedCounty) return;
+
+            fetch(`/home/get-hospital-stats/?county=${selectedCounty}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("API Response:", data); // Check if subcounty_data exists
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+                    updateHospitalChart(data);
+                    updateSubcountyChart(data.subcounty_data);  // Make sure this runs
+                    updateOwnershipPieChart(data.ownership_data); // Update ownership pie chart
+                    updateOwnershipSubcountyChart(data.ownership_subcounty_data); // <-- Add
+                    updateQQ3DensityChart(data.qq3_county_data);
+                    updateQQ3PieChart(data.qq3_subcounty_data);
+                })
+                .catch(error => console.error('Error fetching hospital stats:', error));
+
+        });
+
+        function updateHospitalChart(data) {
+            hospitalChart.data.datasets[0].data = [
+                data['Level 2'] || 0,
+                data['Level 3'] || 0,
+                data['Level 4'] || 0,
+                data['Level 5'] || 0
+            ];
+            hospitalChart.update();
+            document.getElementById('totalHospitals').textContent = `Total Facilities Count: ${data.total || 0}`;
+        }
+
+        function updateSubcountyChart(subcountyData) {
+            const subcounties = Object.keys(subcountyData);
+            const levels = ['Level 2', 'Level 3', 'Level 4', 'Level 5'];
+
+            // Prepare dataset structure
+            let datasets = levels.map(level => ({
+                label: level,
+                data: subcounties.map(subcounty => subcountyData[subcounty][level] || 0),
+                backgroundColor: getRandomColor()
+            }));
+
+            subcountyChart.data.labels = subcounties;
+            subcountyChart.data.datasets = datasets;
+            subcountyChart.update();
+        }
+
+        function updateOwnershipPieChart(ownershipData) {
+            const ownershipLabels = Object.keys(ownershipData);
+            const ownershipValues = Object.values(ownershipData);
+
+            ownershipPieChart.data.labels = ownershipLabels;
+            ownershipPieChart.data.datasets[0].data = ownershipValues;
+            ownershipPieChart.update();
+        }
+
+        function getRandomColor() {
+            return `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.5)`;
+        }
+
+        function updateOwnershipSubcountyChart(ownershipSubcountyData) {
+            const subcounties = Object.keys(ownershipSubcountyData);
+            const ownershipCategories = [...new Set(subcounties.flatMap(subcounty => Object.keys(ownershipSubcountyData[subcounty])))];
+
+            let datasets = ownershipCategories.map(category => ({
+                label: category,
+                data: subcounties.map(subcounty => ownershipSubcountyData[subcounty][category] || 0),
+                backgroundColor: getRandomColor()
+            }));
+
+            ownershipSubcountyChart.data.labels = subcounties;
+            ownershipSubcountyChart.data.datasets = datasets;
+            ownershipSubcountyChart.update();
+        }
+
+
+        // Update QQ3 Density Chart
+        function updateQQ3DensityChart(qq3CountyData) {
+            const labels = Object.keys(qq3CountyData);
+            const values = Object.values(qq3CountyData);
+
+            qq3DensityChart.data.labels = labels;
+            qq3DensityChart.data.datasets[0].data = values;
+            qq3DensityChart.update();
+        }
+
+        // Update QQ3 Line Chart
+        function updateQQ3PieChart(qq3SubcountyData) {
+            const subcounties = Object.keys(qq3SubcountyData);
+            const qq3Categories = [...new Set(subcounties.flatMap(subcounty => Object.keys(qq3SubcountyData[subcounty])))];
+
+            let datasets = qq3Categories.map(category => ({
+                label: category,
+                data: subcounties.map(subcounty => qq3SubcountyData[subcounty][category] || 0),
+                borderColor: getRandomColor(),
+                fill: false
+            }));
+
+            qq3PieChart.data.labels = subcounties;
+            qq3PieChart.data.datasets = datasets;
+            qq3PieChart.update();
+        }
+
+
+
+        // Initialize Hospital Chart
+        const ctx1 = document.getElementById('hospitalChart').getContext('2d');
+        const hospitalChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Level 2', 'Level 3', 'Level 4', 'Level 5'],
+                datasets: [{
+                    label: 'Number of Hospitals',
+                    data: [0, 0, 0, 0], // Initial data
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Initialize Subcounty Chart
+        const ctx2 = document.getElementById('subcountyChart').getContext('2d');
+        const subcountyChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: [], // Will be filled dynamically
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Initialize Ownership Pie Chart
+        const ctx3 = document.getElementById('ownershipPieChart').getContext('2d');
+        const ownershipPieChart = new Chart(ctx3, {
+            type: 'pie',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Facility Ownership',
+                    data: [],
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4CAF50', '#FF5722']
+                }]
+            },
+            options: {
+                responsive: true
+            }
+        });
+
+        // Initialize Ownership by Subcounty Bar Chart
+        const ctx4 = document.getElementById('ownershipSubcountyChart').getContext('2d');
+        const ownershipSubcountyChart = new Chart(ctx4, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Initialize QQ3 Density Chart (Histogram/Density Plot)
+        const ctx5 = document.getElementById('qq3DensityChart').getContext('2d');
+        const qq3DensityChart = new Chart(ctx5, {
+            type: 'bar', // A density plot is often visualized as a bar chart
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'QQ3 Density by County',
+                    data: [],
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // Initialize QQ3 Line Chart
+        const ctx6 = document.getElementById('qq3PieChart').getContext('2d');
+        const qq3PieChart = new Chart(ctx6, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        document.getElementById('level4BufferDropdown').addEventListener('change', function() {
+            const selectedBuffer = this.value;
+            console.log("Selected Level 4 Buffer:", selectedBuffer);
+        });
+
+        document.getElementById('level5BufferDropdown').addEventListener('change', function() {
+            const selectedBuffer = this.value;
+            console.log("Selected Level 5 Buffer:", selectedBuffer);
+        });
+
+        // Add the new code for counting hospitals within the selected buffer
+        document.getElementById('level4BufferDropdown').addEventListener('change', function() {
+            const selectedBuffer = this.value;
+            const selectedCounty = document.getElementById('countyDropdown').value;
+            const selectedSubcounty = document.getElementById('subcountyDropdown').value;
+
+            if (!selectedBuffer || selectedBuffer === "Select Level 4 Buffer") return;
+
+            // Extract the buffer distance from the selected value
+            const bufferDistance = selectedBuffer.split('-')[1];
+
+            // Fetch the hospital count and list within the selected buffer
+            fetch(`/home/count-hospitals-in-buffer/?buffer_type=level4&buffer_distance=${bufferDistance}&county=${selectedCounty}&subcounty=${selectedSubcounty}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+                    console.log("Hospitals within Level 4 Buffer:", data.hospital_count);
+                    // Update the UI with the hospital count
+                    document.getElementById('hospitalCount').textContent = `Hospitals within Buffer: ${data.hospital_count}`;
+
+                    // Display hospitals grouped by level
+                    displayHospitalsByLevel(data.hospitals_by_level);
+                })
+                .catch(error => console.error('Error fetching hospital count:', error));
+        });
+
+        document.getElementById('level5BufferDropdown').addEventListener('change', function() {
+            const selectedBuffer = this.value;
+            const selectedCounty = document.getElementById('countyDropdown').value;
+            const selectedSubcounty = document.getElementById('subcountyDropdown').value;
+
+            if (!selectedBuffer || selectedBuffer === "Select Level 5 Buffer") return;
+
+            // Extract the buffer distance from the selected value
+            const bufferDistance = selectedBuffer.split('-')[1];
+
+            // Fetch the hospital count and list within the selected buffer
+            fetch(`/home/count-hospitals-in-buffer/?buffer_type=level5&buffer_distance=${bufferDistance}&county=${selectedCounty}&subcounty=${selectedSubcounty}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error:', data.error);
+                        return;
+                    }
+                    console.log("Hospitals within Level 5 Buffer:", data.hospital_count);
+                    // Update the UI with the hospital count
+                    document.getElementById('hospitalCount').textContent = `Hospitals within Buffer: ${data.hospital_count}`;
+
+                    // Display hospitals grouped by level
+                    displayHospitalsByLevel(data.hospitals_by_level);
+                })
+                .catch(error => console.error('Error fetching hospital count:', error));
+        });
+
+        function displayHospitalsByLevel(hospitalsByLevel) {
+            // Clear existing tables
+            document.getElementById('level2Table').innerHTML = '';
+            document.getElementById('level3Table').innerHTML = '';
+            document.getElementById('level4Table').innerHTML = '';
+            document.getElementById('level5Table').innerHTML = '';
+
+            // Display hospitals for each level
+            for (const [level, hospitals] of Object.entries(hospitalsByLevel)) {
+                const tableId = `level${level.replace('Level ', '')}Table`;
+                const table = document.getElementById(tableId);
+
+                if (table) {
+                    // Create table rows for each hospital
+                    hospitals.forEach(hospital => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${hospital.facility}</td>
+                            <td>${hospital.county}</td>
+                            <td>${hospital.sub_county}</td>
+                            <td>${hospital.ward}</td>
+                            <td>${hospital.ownership}</td>
+                        `;
+                        table.appendChild(row);
+                    });
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+function downloadCSV(tableId) {
+    let table = document.getElementById(tableId);
+    let rows = Array.from(table.rows);
+    
+    // Get headers
+    let headers = Array.from(rows[0].cells).map(cell => cell.textContent);
+    let csvContent = headers.join(",") + "\n"; // Add headers to CSV
+
+    // Get rows data
+    csvContent += rows.slice(1).map(row => 
+        Array.from(row.cells).map(cell => cell.textContent).join(",")
+    ).join("\n");
+
+    let blob = new Blob([csvContent], { type: "text/csv" });
+    let link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${tableId}.csv`;
+    link.click();
+}
+
+function downloadPDF(tableId, title) {
+    const { jsPDF } = window.jspdf;
+    let doc = new jsPDF();
+    doc.text(title, 10, 10);
+
+    let table = document.getElementById(tableId);
+    let rows = Array.from(table.rows);
+
+    // Get headers
+    let headers = Array.from(rows[0].cells).map(cell => cell.textContent);
+    
+    // Get row data
+    let data = rows.slice(1).map(row => 
+        Array.from(row.cells).map(cell => cell.textContent)
+    );
+
+    // Generate table in PDF
+    doc.autoTable({
+        head: [headers],
+        body: data,
+        startY: 20,
+    });
+
+    doc.save(`${tableId}.pdf`);
+}
+</script>
+
+
+
+</body>
+</html>

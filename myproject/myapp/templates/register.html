@@ -1,0 +1,126 @@
+{% extends "base1.html" %}
+{% load static %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+    
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .container-auth {
+        padding: 2rem;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        padding: 2.5rem;
+        width: 100%;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .auth-card h2 {
+        color: #2d3748;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        text-align: center;
+        font-size: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        font-weight: 500;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 10px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        width: 100%;
+        font-size: 1rem;
+    }
+    
+    .btn-primary:hover {
+        background: #764ba2;
+        transform: translateY(-2px);
+    }
+    
+    .text-muted {
+        font-size: 0.875rem;
+        color: #718096 !important;
+        margin-top: 0.5rem;
+    }
+</style>
+
+<div class="container-auth">
+    <div class="auth-card">
+        <h2>Create Your Account</h2>
+        <form method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.username.label_tag }}
+                <input type="text" name="{{ form.username.name }}" class="form-control" 
+                       id="{{ form.username.id_for_label }}" required>
+            </div>
+            
+            <div class="form-group">
+                {{ form.password1.label_tag }}
+                <input type="password" name="{{ form.password1.name }}" class="form-control"
+                       id="{{ form.password1.id_for_label }}" required>
+                <small class="form-text text-muted">
+                    Your password must be at least 8 characters long and not entirely numeric.
+                </small>
+            </div>
+            
+            <div class="form-group">
+                {{ form.password2.label_tag }}
+                <input type="password" name="{{ form.password2.name }}" class="form-control"
+                       id="{{ form.password2.id_for_label }}" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">Get Started</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
