@@ -1,6 +1,18 @@
 import os
+import django
+import sys
+
+# Set the Django settings module
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings")
+
+# Add the project path to `sys.path`
+sys.path.append("/app")
+
+# Initialize Django
+django.setup()
+
 from django.contrib.gis.utils import LayerMapping
-from myapp.models import Kenya_coutry
+from myapp.models import KenyaCountry
 from django.contrib.gis.gdal import DataSource
 
 
@@ -23,7 +35,7 @@ def import_data(verbose=True):
     kenya_counties_layer = data_source[0].name
     
     kenya_counties_layermapping = LayerMapping(
-        Kenya_coutry, file, kenya_coutry_mapping, layer = kenya_counties_layer
+        KenyaCountry, file, kenya_coutry_mapping, layer = kenya_counties_layer
         )
     
     kenya_counties_layermapping.save(strict = True, verbose=verbose)

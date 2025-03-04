@@ -66,12 +66,13 @@
         <a href="#" id="layers-tab">Layers</a>
         <!-- Layers Control Panel -->
         <div id="layer-controls">
+            
             <label class="custom-checkbox">
-                <input type="checkbox" id="countyLayerCheckbox">
+                <input type="checkbox" id="countryLayerCheckbox">
                 <span class="checkmark"></span> Country
             </label><br>
             <label class="custom-checkbox">
-                <input type="checkbox" id="countryLayerCheckbox">
+                <input type="checkbox" id="countyLayerCheckbox">
                 <span class="checkmark"></span> Counties
             </label><br>
             <label class="custom-checkbox">
@@ -88,11 +89,21 @@
     </div>
         <!-- Right-side boxes -->
         {% endblock %}
+        
     <div id="right-side-boxes">
+        <div>
+            <h3 style="text-align: center; color: #007bff;">Dashboard Objective</h3>
+            <p style="text-align: justify; font-size: 16px; color: #333; margin-right: 30px; background-color: #f7f7f7;">
+                This dashboard aims to address the uneven distribution of healthcare facilities, particularly the absence of Level 2, 3, and 4 hospitals near Level 5 and 4 hospitals, which affects maternal healthcare access.
+                Existing solutions lack interactivity and real-time spatial analysis, making it difficult to identify coverage gaps.
+                
+            </p>
+        </div>
+        <!--
         <div class="level-box" id="level2">Level 2: 0</div>
         <div class="level-box" id="level3">Level 3: 0</div>
         <div class="level-box" id="level4">Level 4: 0</div>
-        <div class="level-box" id="level5">Level 5: 0</div>
+        <div class="level-box" id="level5">Level 5: 0</div>-->
     </div>
 
 
@@ -157,9 +168,9 @@
         L.control.layers(baseMaps).addTo(map);
 
         // Layer groups
-        var subcountyLayer = L.layerGroup();
-        var countyLayer = L.layerGroup();
         var countryLayer = L.layerGroup().addTo(map);
+        var countyLayer = L.layerGroup();
+        var subcountyLayer = L.layerGroup();
         var hospitalLayer = L.layerGroup();
         var hospitalMarkers = L.markerClusterGroup();
         var level4BufferLayer = L.layerGroup();
@@ -178,9 +189,11 @@
                         },
                         onEachFeature: function (feature, layer) {
                             if (feature.properties) {
-                                layer.bindPopup(`<b>${feature.properties.adm1_en || feature.properties.adm0_en || feature.properties.adm2_en}</b>`);
+                                // Prioritize adm2_en (subcounty name) for subcounties
+                                const popupContent = feature.properties.adm2_en || feature.properties.adm1_en || feature.properties.adm0_en;
+                                layer.bindPopup(`<b>${popupContent}</b>`);
                             }
-        
+
                             // Add click event listener to the polygon
                             layer.on('click', function (e) {
                                 // Highlight the clicked polygon
@@ -189,7 +202,7 @@
                                     weight: 3,
                                     fillOpacity: 0.7
                                 });
-        
+
                                 // Reset the style of previously clicked polygons
                                 if (window.previousLayer) {
                                     window.previousLayer.setStyle({
@@ -199,10 +212,10 @@
                                     });
                                 }
                                 window.previousLayer = layer; // Store the currently clicked layer
-        
+
                                 // Get the geometry of the clicked polygon
                                 var polygonGeometry = e.target.toGeoJSON().geometry;
-        
+
                                 // Fetch hospitals within the clicked polygon
                                 fetch('/api/hospitals/within-polygon/', {
                                     method: 'POST',
@@ -224,7 +237,7 @@
                                             'Level 4': 0,
                                             'Level 5': 0
                                         };
-        
+
                                         // Count hospitals by level
                                         data.features.forEach(function(hospital) {
                                             var level = hospital.properties.keph_level;
@@ -232,7 +245,7 @@
                                                 levelCounts[level]++;
                                             }
                                         });
-        
+
                                         // Update the respective boxes
                                         document.getElementById('level2').textContent = `Level 2: ${levelCounts['Level 2']}`;
                                         document.getElementById('level3').textContent = `Level 3: ${levelCounts['Level 3']}`;
@@ -248,27 +261,26 @@
         }
 
         // Load each dataset
-        addGeoJSONLayer('http://127.0.0.1:8000/api/subcounties/', subcountyLayer, 'blue');
-        addGeoJSONLayer('http://127.0.0.1:8000/api/counties/', countyLayer, 'green');
-        addGeoJSONLayer('http://127.0.0.1:8000/api/countries/', countryLayer, 'red');
+        addGeoJSONLayer('http://localhost:8000/api/subcounties/', subcountyLayer, 'blue');
+        addGeoJSONLayer('http://localhost:8000/api/counties/', countyLayer, 'green');
+        addGeoJSONLayer('http://localhost:8000/api/countries/', countryLayer, 'red');
         
         // Fetch hospital data dynamically
         function fetchHospitals() {
             var bounds = map.getBounds();
             var zoomLevel = map.getZoom();
-
             var url = `http://localhost:8000/api/hospitals/?bbox=${bounds.getWest()},${bounds.getSouth()},${bounds.getEast()},${bounds.getNorth()}&zoom=${zoomLevel}`;
 
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    hospitalMarkers.clearLayers();  // Clear existing markers
+                    hospitalMarkers.clearLayers();
                     data.features.forEach(function(hospital) {
                         var lat = hospital.geometry.coordinates[1];
                         var lon = hospital.geometry.coordinates[0];
 
-                        // Skip plotting if latitude or longitude is null or undefined
-                        if (lat == null || lon == null || lat === undefined || lon === undefined) {
+                        // Skip plotting if coordinates are invalid
+                        if (!lat || !lon || lat === 0.0 || lon === 0.0) {
                             console.warn('Skipping hospital with invalid coordinates:', hospital);
                             return;
                         }
@@ -279,10 +291,10 @@
                             Sub-county: ${hospital.properties.sub_county}<br>
                             Constituency: ${hospital.properties.constituen}<br>
                             Ward: ${hospital.properties.ward}<br>
-                            KEHP Level: ${hospital.properties.keph_level}
-                            Ownership: ${hospital.properties.Ownership}<br>
-                            Rural/Urban: ${hospital.properties.QQ2} (${hospital.properties.Q2})<br>
-                            Type: ${hospital.properties.QQ3}
+                            KEHP Level: ${hospital.properties.keph_level}<br>
+                            Ownership: ${hospital.properties.ownership}<br>
+                            Rural/Urban: ${hospital.properties.qq2} (${hospital.properties.q2})<br>
+                            Type: ${hospital.properties.qq3}
                         `;
                         var marker = L.marker([lat, lon]).bindPopup(popupContent);
                         hospitalMarkers.addLayer(marker);
@@ -291,6 +303,7 @@
                 })
                 .catch(error => console.error('Error fetching hospital data:', error));
         }
+
 
         // Fetch hospitals when the map is zoomed or panned
         map.on('moveend', function() {
@@ -336,7 +349,7 @@
         // Checkbox event listeners for Level 4 and Level 5 Buffer layers
         document.getElementById('level4BufferCheckbox').addEventListener('change', function () {
             if (this.checked) {
-                addGeoJSONLayer('http://127.0.0.1:8000/api/level4-buffer/', level4BufferLayer, 'purple');
+                addGeoJSONLayer('http://localhost:8000/api/level4-buffer/', level4BufferLayer, 'purple');
                 map.addLayer(level4BufferLayer);
             } else {
                 map.removeLayer(level4BufferLayer);
@@ -346,7 +359,7 @@
 
         document.getElementById('level5BufferCheckbox').addEventListener('change', function () {
             if (this.checked) {
-                addGeoJSONLayer('http://127.0.0.1:8000/api/level5-buffer/', level5BufferLayer, 'orange');
+                addGeoJSONLayer('http://localhost:8000/api/level5-buffer/', level5BufferLayer, 'orange');
                 map.addLayer(level5BufferLayer);
             } else {
                 map.removeLayer(level5BufferLayer);

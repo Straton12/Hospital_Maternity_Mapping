@@ -1,0 +1,55 @@
+services:
+  web:
+    build: .
+    container_name: django_app
+    command: gunicorn --bind 0.0.0.0:8000 myproject.wsgi:application
+    volumes:
+      - .:/app
+      - static_volume:/vol/web/static
+      - media_volume:/vol/web/media
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"  # Expose port 8000 to the host machine
+    networks:
+      - mynetwork
+
+  db:
+    image: postgis/postgis:14-3.3
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_DB: hosi
+      POSTGRES_USER: hosi
+      POSTGRES_PASSWORD: hosi12.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - mynetwork
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    depends_on:
+      - web
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/vol/web/static
+      - media_volume:/vol/web/media
+    ports:
+      - "80:80"
+    networks:
+      - mynetwork
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  mynetwork:
+    driver: bridge

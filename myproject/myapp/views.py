@@ -131,8 +131,12 @@ def analytics_view(request):
 
 @login_required
 def analytics_view(request):
+    
+    # I have changed this in docker 
+    
+    
     # Fetch all counties and subcounties from the database
-    counties = KenyaCountry.objects.values_list('adm0_en', flat=True).distinct()
+    counties = KenyaCounty.objects.values_list('adm1_en', flat=True).distinct()
     subcounties = KenyaSubcounty.objects.values_list('adm2_en', 'adm1_en').distinct()
     
     # Convert subcounties to a dictionary where the key is the county and the value is a list of subcounties
@@ -166,7 +170,7 @@ def get_buffer_distances(request):
 
     try:
         # Get the geometry of the selected county
-        county = KenyaCountry.objects.get(adm0_en=county_name)
+        county = KenyaCounty.objects.get(adm1_en=county_name)  # Use KenyaCounty, not KenyaCountry
         county_geom = county.geom
 
         # Filter buffers that intersect with the selected county
@@ -187,7 +191,7 @@ def get_buffer_distances(request):
             'level5_buffers': list(level5_buffers),
         })
 
-    except KenyaCountry.DoesNotExist:
+    except KenyaCounty.DoesNotExist:
         return JsonResponse({'error': 'County not found'}, status=404)
     except KenyaSubcounty.DoesNotExist:
         return JsonResponse({'error': 'Subcounty not found'}, status=404)

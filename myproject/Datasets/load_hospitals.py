@@ -1,4 +1,16 @@
 import os
+import django
+import sys
+
+# Set the Django settings module
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "myproject.settings")
+
+# Add the project path to `sys.path`
+sys.path.append("/app")
+
+# Initialize Django
+django.setup()
+
 from django.contrib.gis.utils import LayerMapping
 from myapp.models import Hospitals
 from django.contrib.gis.gdal import DataSource
