@@ -64,6 +64,9 @@ README.md                # Project documentation
 6. Access the application at `http://localhost:8000`
 
 ## API Endpoints
+- `/api/country/` - Get country boundary
+- - `/api/counties/` - Get all counties boundaries
+- - `/api/sub_counties/` - Get all sub_counties boundaries
 - `/api/hospitals/` - Get all hospital facilities
 - `/api/buffers/level4/` - Get Level 4 buffer zones
 - `/api/buffers/level5/` - Get Level 5 buffer zones
