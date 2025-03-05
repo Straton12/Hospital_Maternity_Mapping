@@ -75,7 +75,7 @@ README.md                # Project documentation
 ## Screenshots
 *Include images of the output here*
 
-![Screenshot 1](screenshots/screenshot1.png)
+![Screenshot 1]([screenshots/screenshot1.png](https://github.com/Straton12/Hospital_Maternity_Mapping/blob/56412aa9c872363316eaaf371ef392fa0aea37c2/login.JPG)) 
 
 ![Screenshot 2](screenshots/screenshot2.png)
 
