@@ -11,6 +11,13 @@ This project is part of the review for the Maternity Benefit Package. The goal i
   - Click on facilities to view details (e.g., level, ownership).
   - Download data as a CSV file.
 
+    ## Screenshots of the output
+![image alt](login.JPG)
+![image alt](landing page.JPG)
+![image alt](search.JPG)
+![image alt](analytics.JPG)
+![image alt](download.JPG)
+
 ## Technologies Used
 - **Backend:** [Django](https://docs.djangoproject.com/en/5.1/), [Django REST Framework](https://www.django-rest-framework.org/), [Django GIS (PostGIS)](https://docs.djangoproject.com/en/5.1/ref/contrib/gis/)
 - **Database:** [PostgreSQL](https://www.postgresql.org/) with [PostGIS](https://postgis.net/)
@@ -72,12 +79,7 @@ README.md                # Project documentation
 - `/api/buffers/level5/` - Get Level 5 buffer zones
 - `/api/download/` - Download hospital data as CSV
 
-## Screenshots
-*Include images of the output here*
 
-![image alt]([[screenshots/screenshot1.png]](https://github.com/Straton12/Hospital_Maternity_Mapping/blob/b9156ef6f2e9428e2508a3b67f8cc6cc0cad8925/login.JPG))(https://github.com/Straton12/Hospital_Maternity_Mapping/blob/56412aa9c872363316eaaf371ef392fa0aea37c2/login.JPG)) 
-
-![image alt](login.JPG)
 
 ## Additional Resources
 - [QGIS Download](https://qgis.org/download/)
