@@ -77,7 +77,7 @@ README.md                # Project documentation
 
 ![image alt]([[screenshots/screenshot1.png]](https://github.com/Straton12/Hospital_Maternity_Mapping/blob/b9156ef6f2e9428e2508a3b67f8cc6cc0cad8925/login.JPG))(https://github.com/Straton12/Hospital_Maternity_Mapping/blob/56412aa9c872363316eaaf371ef392fa0aea37c2/login.JPG)) 
 
-![Screenshot 2](screenshots/screenshot2.png)
+![image alt](login.JPG)
 
 ## Additional Resources
 - [QGIS Download](https://qgis.org/download/)
