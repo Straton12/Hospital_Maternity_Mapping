@@ -84,6 +84,7 @@ README.md                # Project documentation
 
 ## Contributors
 - **Straton**
+- amodorastraton@gmail.com
 
 
 
