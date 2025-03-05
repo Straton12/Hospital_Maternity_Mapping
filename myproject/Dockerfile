@@ -35,7 +35,7 @@ RUN apk add --no-cache postgresql postgresql-contrib postgis postgresql-client
 
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY ./requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -48,7 +48,7 @@ RUN mkdir -p /vol/web/media /vol/web/static && \
     chmod -R 755 /vol
 
 # Copy and set up the entrypoint script
-COPY myproject/scripts /scripts
+COPY scripts /scripts
 RUN chmod +x /scripts/*
 
 USER user
