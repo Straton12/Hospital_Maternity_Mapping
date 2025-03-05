@@ -48,7 +48,7 @@ RUN mkdir -p /vol/web/media /vol/web/static && \
     chmod -R 755 /vol
 
 # Copy and set up the entrypoint script
-COPY ./scripts /scripts
+COPY myproject/scripts /scripts
 RUN chmod +x /scripts/*
 
 USER user
